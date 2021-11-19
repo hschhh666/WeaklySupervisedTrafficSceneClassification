@@ -1,0 +1,53 @@
+import torch
+from torchvision.datasets import ImageFolder
+import numpy as np
+import os
+import random
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--sample_num', type=int)
+parser.add_argument('--dataset_path', type=str)
+parser.add_argument('--out_path', type=str)
+args = parser.parse_args()
+
+dataset_path = args.dataset_path
+out_path = args.out_path
+sample_num = args.sample_num
+
+
+out_path = os.path.join(out_path,'%d.npy'%sample_num)
+
+dataset_path = os.path.join(dataset_path,'train')
+
+torch_imageFolder = ImageFolder(dataset_path)
+torch_imgs_and_targets = torch_imageFolder.imgs
+
+data_num = len(torch_imgs_and_targets)
+pair_list = []
+for i in range(data_num - 1):
+    for j in range(i+1, data_num):
+        pair_list.append([i,j])
+
+sampled_pair = random.sample(pair_list, sample_num)
+
+relation_dict = {}
+for i in range(data_num):
+    relation_dict[i] = {'pos':[],'neg':[]} # 初始化字典
+
+for i in sampled_pair:
+    i1 = i[0]
+    i2 = i[1]
+    relation = (torch_imgs_and_targets[i1][1] == torch_imgs_and_targets[i2][1])
+    if relation:
+        relation_dict[i1]['pos'].append(i2)
+        relation_dict[i2]['pos'].append(i1)
+    else:
+        relation_dict[i1]['neg'].append(i2)
+        relation_dict[i2]['neg'].append(i1)
+
+relation_dict['sample_num'] = sample_num
+np.save(out_path, relation_dict)
+
+readed_dict = np.load(out_path, allow_pickle = True).item()
+pass
