@@ -43,8 +43,8 @@ class myResnet18(nn.Module):
                 mlp.append(nn.BatchNorm1d(dim2, affine=False))
         return nn.Sequential(*mlp)
     
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, x): # 注意，该网络输出的特征已经归一化了
+        return nn.functional.normalize(self.model(x), dim=1)
 
 
 

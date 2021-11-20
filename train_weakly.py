@@ -52,7 +52,7 @@ def parse_option():
     parser.add_argument('--softmax', action='store_true', help='using softmax contrastive loss rather than NCE')
     parser.add_argument('--nce_k', type=int, default=14) # negative sample number
     parser.add_argument('--nce_t', type=float, default=0.2) # temperature parameter
-    parser.add_argument('--nce_m', type=float, default=0.5) # memory update rate
+    parser.add_argument('--nce_m', type=float, default=0.9) # memory update rate
     parser.add_argument('--global_neg_percent', type=float, default=0.3) # 在负样本中，至少有百分之多少的是全局随机采样的，而剩下的是从标注的负样本中采样的
     parser.add_argument('--feat_dim', type=int, default=64, help='dim of feat for inner product') # dimension of network's output
 
@@ -129,8 +129,11 @@ def get_train_loader(args):
     args.n_data = len(train_dataset)
     print('number of train samples: {}'.format(args.n_data))
 
-    batch_sampler = RandomBatchSamplerWithPosAndNeg(train_dataset, args=args)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_sampler=batch_sampler, num_workers=args.num_workers, pin_memory=True)
+    if args.contrastMethod == 'e2e':
+        batch_sampler = RandomBatchSamplerWithPosAndNeg(train_dataset, args=args)
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_sampler=batch_sampler, num_workers=args.num_workers, pin_memory=True)
+    if args.contrastMethod == 'membank':
+        train_loader = torch.utils.data.DataLoader(train_dataset,batch_size = args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
 
     return train_loader
 
@@ -149,7 +152,7 @@ def set_model(args):
 
     contrast = 'placeholder'
     if args.contrastMethod == 'membank':
-        contrast = NCEAverage(args.feat_dim, n_data,classInstansSet,args.nce_k, args.nce_t, args.nce_m, args.softmax)
+        contrast = NCEAverage(args.feat_dim, args.n_data, args.sample_dict, args.global_neg_percent, args.nce_k, args.nce_t, args.nce_m, args.softmax)
     elif args.contrastMethod == 'e2e':
         contrast = E2EAverage(args.nce_k, args.n_data, args.nce_t, args.softmax)
 
@@ -180,7 +183,7 @@ def train_e2e(epoch,train_loader, model, contrast, criterion, optimizer, args):
     probs = AverageMeter()
 
     end = time.time()
-    for idx,(img, target) in enumerate(train_loader):
+    for idx,(img, target, index) in enumerate(train_loader):
         data_time.update(time.time() - end)
 
         bsz = img.size(0)
@@ -244,9 +247,10 @@ def train_mem_bank(epoch,train_loader, model, contrast, criterion, optimizer, ar
 
         # ===================forward=====================
         feat = model(img)
-        mutualInfo = contrast(feat, target, index)
+        mutualInfo = contrast(feat, index)
         loss = criterion(mutualInfo)
         prob = mutualInfo[:,0].mean()
+        prob = 1/torch.exp(loss)
 
         # ===================backward=====================
         optimizer.zero_grad()

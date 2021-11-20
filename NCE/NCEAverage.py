@@ -1,20 +1,21 @@
+from numpy import dtype
 import torch
 from torch import nn
-# from sampleIdx import SampleIndex
+from sampleIdx import getPosNegIdx
 import math
 
 
 class NCEAverage(nn.Module):
 
-    def __init__(self, inputSize, outputSize, classInstansSet, K, T=0.07, momentum=0.5, use_softmax=False):
+    def __init__(self, inputSize, outputSize, sample_dict, random_neg_percent, K, T=0.07, momentum=0.5, use_softmax=False):
         super(NCEAverage, self).__init__()
         self.use_softmax = use_softmax
         self.register_buffer('params', torch.tensor([K, T, -1, momentum]))
         stdv = 1. / math.sqrt(inputSize / 3)
         self.register_buffer('memory', torch.rand(outputSize, inputSize).mul_(2 * stdv).add_(-stdv)) # outputSize指的是样本总数，inputSize指的是特征维度
-        self.sampleIdx = SampleIndex(classInstansSet)
+        self.get_pos_neg_idx = getPosNegIdx(outputSize,sample_dict,K, random_neg_percent)
 
-    def forward(self, anchor, target, index):
+    def forward(self, anchor, index):
         K = int(self.params[0].item())
         T = self.params[1].item()
         Z = self.params[2].item()
@@ -23,11 +24,15 @@ class NCEAverage(nn.Module):
         outputSize = self.memory.size(0)
         inputSize = self.memory.size(1)
         
-        idx = self.sampleIdx.getRandomIdx(target,K)
+        idx = []
+        for i in index:
+            i = i.cpu().item()
+            idx.append(self.get_pos_neg_idx.get(i))
+        idx = torch.tensor(idx,dtype=int).cuda()
+
         memory_feat = torch.index_select(self.memory,0,idx.view(-1)).detach()
         memory_feat = memory_feat.view(batchSize, K+1, inputSize)
         mutualInfo = torch.bmm(memory_feat, anchor.view(batchSize, inputSize,1))
-
 
         if self.use_softmax:
             mutualInfo = torch.div(mutualInfo, T)
@@ -67,7 +72,6 @@ class E2EAverage(nn.Module):
         Z = self.params[2].item()
         outputSize = self.params[3].item()
 
-        feat = nn.functional.normalize(feat, dim=1)
         featNum = feat.size(0)
         bsz = featNum // (K+2) #  每个anchor对应一个pos和K个neg，即(K+2)个是一组。
         featSize = feat.size(1) # 获取特征的维度

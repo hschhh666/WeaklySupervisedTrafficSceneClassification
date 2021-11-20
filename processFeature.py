@@ -93,11 +93,12 @@ class FeatureExtractor(nn.Module):
         for name, module in self.submodule._modules['model']._modules.items():
             if name == "fc": 
                 x = x.view(x.size(0), -1)
-                return x
+                # return x
             x = module(x)
+        return x
 
 def get_feat(model, data_loader, args) -> np.array:
-    feat_dim = model.feat_dim_before_fc
+    feat_dim = args.feat_dim
     feature_extractor = FeatureExtractor(model)
     memory = torch.ones(args.n_data, feat_dim).cuda()
     targets = []
@@ -141,7 +142,6 @@ def process_feature(args): # 其实这个函数就相当于主程序了
     # 配置DataLoader
     train_loader, val_loader = set_dataloader(args)
 
-
     args.n_data = args.train_num    
     print('Calculating train set feature...')
     feat, targets = get_feat(model, train_loader, args)
@@ -179,8 +179,8 @@ if __name__ == '__main__':
     parser.add_argument('--reduce_method', default='pca', type=str,help='feature dimention reduce method for visuilization, pca or tsne')
 
     args = parser.parse_args()
-
-    args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211114_00_31_03_lr_0.03_decay_0.0001_bsz_128_/ckpt_epoch_50.pth'
+    args.feat_dim = 64
+    args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211119_17_31_19_lossMethod_softmax_NegNum_14_lr_0.03_decay_0.0001_bsz_8_featDim_64_/ckpt_epoch_120_Best.pth'
     args.data = '/home/hsc/Research/TrafficSceneClassification/data/HSD_masked_balanced'
     start = time.time()
     process_feature(args)
