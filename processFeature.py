@@ -103,10 +103,12 @@ def get_feat(model, data_loader, args) -> np.array:
     memory = torch.ones(args.n_data, feat_dim).cuda()
     targets = []
     batch_size = 0
+    start_idx = 0
     with torch.no_grad():
         for idx,(img, target) in enumerate(data_loader):
-            batch_size = img.shape[0] if batch_size == 0 else img.shape[0]
-            index = list(range(batch_size*idx, batch_size*idx + img.shape[0]))
+            batch_size = img.shape[0]
+            index = list(range(start_idx, start_idx + batch_size))
+            start_idx += batch_size
             index = torch.tensor(index, dtype=torch.long).cuda()
             targets += list(target.numpy())
             img = img.cuda()
@@ -180,7 +182,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     args.feat_dim = 64
-    args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211119_17_31_19_lossMethod_softmax_NegNum_14_lr_0.03_decay_0.0001_bsz_8_featDim_64_/ckpt_epoch_120_Best.pth'
+    # args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211119_17_31_19_lossMethod_softmax_NegNum_14_lr_0.03_decay_0.0001_bsz_8_featDim_64_/ckpt_epoch_120_Best.pth'
     args.data = '/home/hsc/Research/TrafficSceneClassification/data/HSD_masked_balanced'
     start = time.time()
     process_feature(args)
