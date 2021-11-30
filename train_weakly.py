@@ -16,7 +16,7 @@ import numpy as np
 from torchvision import transforms
 from dataset import myImageFolder
 
-from myModel import myResnet18
+from myModel import myResnet50
 from NCE.NCEAverage import NCEAverage, E2EAverage
 from NCE.NCECriterion import NCECriterion
 from NCE.NCECriterion import NCESoftmaxLoss
@@ -139,7 +139,7 @@ def get_train_loader(args):
 
 def set_model(args):
 
-    model = myResnet18(args.feat_dim, pretrained=True)
+    model = myResnet50(args.feat_dim, pretrained=True)
 
     if args.resume:
         if torch.cuda.is_available():
