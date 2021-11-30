@@ -27,11 +27,13 @@ from util import Logger,print_running_time
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import classification_report
 
-feat = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/train_feat_after_fc.npy'
-targets = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211129_19_44_39_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/train_targets.npy'
+res_path = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_'
 
-val_feat = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/val_feat_after_fc.npy'
-val_targets = '/home/hsc/Research/TrafficSceneClassification/runningSavePath_saveByAcc/resultPath/20211121_22_02_51_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/val_targets.npy'
+feat = os.path.join(res_path,'train_feat_after_fc.npy')
+targets = os.path.join(res_path,'train_targets.npy')
+
+val_feat = os.path.join(res_path,'val_feat_after_fc.npy')
+val_targets = os.path.join(res_path,'val_targets.npy')
 
 distance_metric = 'cosine'
 # distance_metric = 'euclid'
@@ -66,7 +68,8 @@ for i in range(np.shape(cluster_model.cluster_centers_)[0]):
 
 converted_center = np.array(converted_center) # 这就是聚类中心
 
-
+# for i in range(4):
+#     converted_center[i,:] = np.average(feat[targets == i], axis=0)
 
 
 pred_labels = []
