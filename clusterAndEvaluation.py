@@ -30,6 +30,10 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 res_path = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_04_34_20_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_'
 
+log_file_name = os.path.join(res_path, 'clusterAndEvaluation.txt') 
+sys.stdout = Logger(log_file_name) # 把print的东西输出到txt文件中
+
+
 feat = os.path.join(res_path,'train_feat_after_fc.npy')
 targets = os.path.join(res_path,'train_targets.npy')
 
@@ -94,7 +98,7 @@ for i in range(np.shape(val_feat)[0]):
 cm = confusion_matrix(val_targets, pred_labels)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Highway','Local','Ramp','Urban'])
 disp.plot()
-plt.savefig('confusion_matrix.png')
+plt.savefig(os.path.join(res_path,'confusion_matrix.png'))
 
 print('<================Val classification report================>')
 print(classification_report(val_targets, pred_labels, target_names=['Highway','Local','Ramp','Urban'], digits=3))
@@ -119,7 +123,7 @@ fig.add_subplot(122)
 plt.scatter(converted_center[:,0], converted_center[:,1], c = [0,1,2,3], s = 40)
 plt.scatter(reduced_feat[:,0], reduced_feat[:,1], c = converted_label, s = 1, alpha = 0.8)
 plt.title('kmeans-%s'%vis_reduce_method)
-plt.savefig('cluster.png')
+plt.savefig(os.path.join(res_path,'cluster.png'))
 
 exit(0)
 
