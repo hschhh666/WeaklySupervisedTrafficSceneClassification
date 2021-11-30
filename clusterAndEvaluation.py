@@ -27,11 +27,14 @@ from util import Logger,print_running_time
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import classification_report
 
-feat = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/train_feat_before_fc.npy'
+feat = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/train_feat_after_fc.npy'
 targets = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211129_19_44_39_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/train_targets.npy'
 
-val_feat = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/val_feat_before_fc.npy'
+val_feat = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/val_feat_after_fc.npy'
 val_targets = '/home/hsc/Research/TrafficSceneClassification/runningSavePath_saveByAcc/resultPath/20211121_22_02_51_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/val_targets.npy'
+
+distance_metric = 'cosine'
+# distance_metric = 'euclid'
 
 feat = np.load(feat)
 targets = np.load(targets)
@@ -64,6 +67,8 @@ for i in range(np.shape(cluster_model.cluster_centers_)[0]):
 converted_center = np.array(converted_center) # 这就是聚类中心
 
 
+
+
 pred_labels = []
 for i in range(np.shape(val_feat)[0]):
     cur_feat = val_feat[i]
@@ -71,7 +76,11 @@ for i in range(np.shape(val_feat)[0]):
     p = 0
     for j in range(np.shape(converted_center)[0]):
         cur_center = converted_center[j]
-        dis = np.sqrt(np.sum(np.square(cur_center - cur_feat)))
+        if distance_metric == 'euclid':
+            dis = np.sqrt(np.sum(np.square(cur_center - cur_feat)))
+        else:
+            dis = 1 - np.sum((cur_center/np.linalg.norm(cur_center)) * (cur_feat/np.linalg.norm(cur_feat)))
+
         if dis < min_dis:
             min_dis = dis
             p = j
