@@ -26,8 +26,9 @@ from sklearn.cluster import AgglomerativeClustering
 from util import Logger,print_running_time
 from sklearn.metrics import silhouette_score
 from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-res_path = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_00_57_16_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_'
+res_path = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_04_34_20_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_'
 
 feat = os.path.join(res_path,'train_feat_after_fc.npy')
 targets = os.path.join(res_path,'train_targets.npy')
@@ -90,6 +91,10 @@ for i in range(np.shape(val_feat)[0]):
     pred_labels.append(p)
 
 
+cm = confusion_matrix(val_targets, pred_labels)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Highway','Local','Ramp','Urban'])
+disp.plot()
+plt.savefig('confusion_matrix.png')
 
 print('<================Val classification report================>')
 print(classification_report(val_targets, pred_labels, target_names=['Highway','Local','Ramp','Urban'], digits=3))
