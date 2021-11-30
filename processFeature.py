@@ -22,12 +22,12 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from torchvision.transforms.transforms import Resize
 from util import Logger,print_running_time
-from myModel import myResnet18
+from myModel import myResnet50
 
 
 def set_model(args):
     # 加载模型
-    model = myResnet18(args.feat_dim, parallel = False)
+    model = myResnet50(args.feat_dim, parallel = False)
     
     # 加载预训练模型参数
     print("=> loading checkpoint '{}'".format(args.pretrained))
@@ -90,17 +90,19 @@ class FeatureExtractor(nn.Module):
  
     # 自己修改forward函数
     def forward(self, x):
+        res = []
         for name, module in self.submodule._modules['model']._modules.items():
             if name == "fc": 
                 x = x.view(x.size(0), -1)
-                # return x
+                res.append(x)
             x = module(x)
-        return x
+        res.append(x)
+        return res
 
 def get_feat(model, data_loader, args) -> np.array:
-    feat_dim = args.feat_dim
     feature_extractor = FeatureExtractor(model)
-    memory = torch.ones(args.n_data, feat_dim).cuda()
+    memory_before_fc = torch.ones(args.n_data, model.feat_dim_before_fc).cuda()
+    memory_after_fc = torch.ones(args.n_data, model.feat_dim_after_fc).cuda()
     targets = []
     batch_size = 0
     start_idx = 0
@@ -112,10 +114,14 @@ def get_feat(model, data_loader, args) -> np.array:
             index = torch.tensor(index, dtype=torch.long).cuda()
             targets += list(target.numpy())
             img = img.cuda()
-            feat = feature_extractor(img)
-            memory.index_copy_(0,index,feat)
-    memory = memory.cpu().numpy()
-    return memory, targets
+            res = feature_extractor(img)
+            feat_before_fc = res[0]
+            feat_after_fc = res[1]
+            memory_before_fc.index_copy_(0,index,feat_before_fc)
+            memory_after_fc.index_copy_(0,index,feat_after_fc)
+    memory_before_fc = memory_before_fc.cpu().numpy()
+    memory_after_fc = memory_after_fc.cpu().numpy()
+    return [memory_before_fc, memory_after_fc], targets
 
 
 def vis_feat(feat, targets, save_name, args):
@@ -148,12 +154,16 @@ def process_feature(args): # 其实这个函数就相当于主程序了
     print('Calculating train set feature...')
     feat, targets = get_feat(model, train_loader, args)
     # 保存特征
-    np.save(os.path.join(args.result_path, 'train_feat.npy'), feat)
+    np.save(os.path.join(args.result_path, 'train_feat_before_fc.npy'), feat[0])
+    np.save(os.path.join(args.result_path, 'train_feat_after_fc.npy'), feat[1])
     np.save(os.path.join(args.result_path, 'train_targets.npy'), targets)
     # 可视化特征
-    save_name = 'train_featvis.png'
+    
     print('Visulization train set feature...')
-    vis_feat(feat, targets, save_name, args)
+    save_name = 'train_feat_before_fc_vis.png'
+    vis_feat(feat[0], targets, save_name, args)
+    save_name = 'train_feat_after_fc_vis.png'
+    vis_feat(feat[1], targets, save_name, args)
 
 
 
@@ -161,12 +171,16 @@ def process_feature(args): # 其实这个函数就相当于主程序了
     print('Calculating val set feature...')
     feat, targets = get_feat(model, val_loader, args)
     # 保存特征
-    np.save(os.path.join(args.result_path, 'val_feat.npy'), feat)
+    np.save(os.path.join(args.result_path, 'val_feat_before_fc.npy'), feat[0])
+    np.save(os.path.join(args.result_path, 'val_feat_after_fc.npy'), feat[1])
     np.save(os.path.join(args.result_path, 'val_targets.npy'), targets)
     # 可视化特征
-    save_name = 'val_featvis.png'
-    print('Visulization val set feature...')
-    vis_feat(feat, targets, save_name, args)
+    
+    # print('Visulization val set feature...')
+    # save_name = 'val_feat_before_fc_vis.png'
+    # vis_feat(feat[0], targets, save_name, args)
+    # save_name = 'val_feat_after_fc_vis.png'
+    # vis_feat(feat[1], targets, save_name, args)
 
 
 
@@ -182,8 +196,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     args.feat_dim = 64
-    # args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211119_17_31_19_lossMethod_softmax_NegNum_14_lr_0.03_decay_0.0001_bsz_8_featDim_64_/ckpt_epoch_120_Best.pth'
-    args.data = '/home/hsc/Research/TrafficSceneClassification/data/HSD_masked_balanced'
+    args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211129_19_44_39_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/ckpt_epoch_150.pth'
+    args.data = '/home/hsc/Research/TrafficSceneClassification/data/HSD_masked_selectedBy4Uniform'
     start = time.time()
     process_feature(args)
     print('Processing using time: %.0fs'%(time.time()-start))
