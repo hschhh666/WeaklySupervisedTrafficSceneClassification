@@ -4,21 +4,23 @@ import numpy as np
 import os
 import random
 import argparse
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--sample_num', type=int)
 parser.add_argument('--dataset_path', type=str)
-parser.add_argument('--out_path', type=str)
 args = parser.parse_args()
 
 dataset_path = args.dataset_path
-out_path = args.out_path
 sample_num = args.sample_num
 
-
-out_path = os.path.join(out_path,'%d.npy'%sample_num)
+outpath = os.path.join(dataset_path,'pos_neg_relation')
+if not os.path.exists(outpath):
+    os.makedirs(outpath)
+out_path = os.path.join(outpath,'%d.npy'%sample_num)
 
 dataset_path = os.path.join(dataset_path,'train')
+
 
 torch_imageFolder = ImageFolder(dataset_path)
 torch_imgs_and_targets = torch_imageFolder.imgs
@@ -35,7 +37,8 @@ relation_dict = {}
 for i in range(data_num):
     relation_dict[i] = {'pos':[],'neg':[]} # 初始化字典
 
-for i in sampled_pair:
+pbar = tqdm(sampled_pair)
+for i in pbar:
     i1 = i[0]
     i2 = i[1]
     relation = (torch_imgs_and_targets[i1][1] == torch_imgs_and_targets[i2][1])
