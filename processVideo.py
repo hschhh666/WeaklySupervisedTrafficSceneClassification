@@ -39,19 +39,29 @@ args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath
 
 # args.video = '/home/hsc/Research/TrafficSceneClassification/data/val/20180405_113845_2018-04-05.mp4'
 
-args.tarVideo = args.video[:-4]+'masked.avi'
-args.tarNpyPath = args.video[:-4]+'.npy'
+args.tarVideo = args.video[:-4]+'_masked.avi'
+args.tarNpyPath = args.video[:-4]+'_Contras.npy'
 # ===============读取视频及信息===============
 cap = cv2.VideoCapture(args.video)
 fps = int(cap.get(cv2.CAP_PROP_FPS))
 frame_num = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+if os.path.exists(args.tarVideo):
+    cap.release()
+    cap = cv2.VideoCapture(args.tarVideo)
+    print('Masked video exist, donot calculate mask.')
+else:
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(args.tarVideo, fourcc, fps, (width, height))
 
 
 # ===============配置语义分割模型===============
-semantic_model = DeepLabV3()
-semantic_model.load_state_dict(torch.load("/home/hsc/Research/TrafficSceneClassification/code/testExperiment/Deeplab/deeplabv3/pretrained_models/model_13_2_2_2_epoch_580.pth"))
-semantic_model.cuda()
-semantic_model.eval()
+if not os.path.exists(args.tarVideo):
+    semantic_model = DeepLabV3()
+    semantic_model.load_state_dict(torch.load("/home/hsc/Research/TrafficSceneClassification/code/testExperiment/Deeplab/deeplabv3/pretrained_models/model_13_2_2_2_epoch_580.pth"))
+    semantic_model.cuda()
+    semantic_model.eval()
 
 # ===============配置特征计算模型===============
 model = myResnet50(64, parallel = False)
@@ -110,32 +120,37 @@ for i in pbar:
         print('Read error at frame %d in %s'%(fno, args.video))
         continue
     img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-    img = Image.fromarray(img).convert('RGB')
-    img = semantic_transforms(img)
-    img = img.unsqueeze(0)
-    img = img.cuda()
-    with torch.no_grad():
-        outputs = semantic_model(img)
-    outputs = outputs.data.cpu().numpy() # (shape: (batch_size, num_classes, img_h, img_w))
-    pred_label_imgs = np.argmax(outputs, axis=1) # (shape: (batch_size, img_h, img_w))
-    pred_label_imgs = pred_label_imgs.astype(np.uint8)
-    img = img.cpu().numpy()[0]
-    pred_label_imgs = np.transpose(pred_label_imgs,(1,2,0))[:,:,0]
-    img = np.transpose(img,(1,2,0))
-    img = img*np.array([0.229, 0.224, 0.225])
-    img = img + np.array([0.485, 0.456, 0.406])
-    img = img*255.0
-    img = img.astype(np.uint8)
-    labels = list(range(11,19))
-    mask = np.zeros((np.shape(img)[0], np.shape(img)[1]), dtype= int)
-    for l in labels:
-        mask = np.logical_or(mask, pred_label_imgs == l)
-    mask = 1 - mask
-    img = cv2.add(img, np.zeros(np.shape(img), dtype=np.uint8), mask = mask.astype(np.uint8))
-    img = cv2.resize(img,(400,224))
-    # img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
-    #至此，semantic处理完毕一帧图像
 
+    if not os.path.exists(args.tarVideo):
+        img = Image.fromarray(img).convert('RGB')
+        img = semantic_transforms(img)
+        img = img.unsqueeze(0)
+        img = img.cuda()
+        with torch.no_grad():
+            outputs = semantic_model(img)
+        outputs = outputs.data.cpu().numpy() # (shape: (batch_size, num_classes, img_h, img_w))
+        pred_label_imgs = np.argmax(outputs, axis=1) # (shape: (batch_size, img_h, img_w))
+        pred_label_imgs = pred_label_imgs.astype(np.uint8)
+        img = img.cpu().numpy()[0]
+        pred_label_imgs = np.transpose(pred_label_imgs,(1,2,0))[:,:,0]
+        img = np.transpose(img,(1,2,0))
+        img = img*np.array([0.229, 0.224, 0.225])
+        img = img + np.array([0.485, 0.456, 0.406])
+        img = img*255.0
+        img = img.astype(np.uint8)
+        labels = list(range(11,19))
+        mask = np.zeros((np.shape(img)[0], np.shape(img)[1]), dtype= int)
+        for l in labels:
+            mask = np.logical_or(mask, pred_label_imgs == l)
+        mask = 1 - mask
+        img = cv2.add(img, np.zeros(np.shape(img), dtype=np.uint8), mask = mask.astype(np.uint8))
+        #至此，semantic处理完毕一帧图像
+        frame = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+        out.write(frame)
+
+
+    img = cv2.resize(img,(400,224))
+    
     img = Image.fromarray(img).convert('RGB')
     
     img = featCal_transforms(img)
@@ -151,4 +166,6 @@ for i in pbar:
 
 memory_after_fc = memory_after_fc.cpu().numpy()
 np.save(args.tarNpyPath, memory_after_fc)
+out.release()
+cap.release()
 print('Save npy to %s. Done.'%args.tarNpyPath)
