@@ -166,6 +166,7 @@ for i in pbar:
 
 memory_after_fc = memory_after_fc.cpu().numpy()
 np.save(args.tarNpyPath, memory_after_fc)
-out.release()
+if not os.path.exists(args.tarVideo):
+    out.release()
 cap.release()
 print('Save npy to %s. Done.'%args.tarNpyPath)
