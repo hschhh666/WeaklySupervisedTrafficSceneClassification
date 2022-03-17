@@ -196,8 +196,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     args.feat_dim = 64
-    args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211129_19_44_39_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/ckpt_epoch_150.pth'
-    args.data = '/home/hsc/Research/TrafficSceneClassification/data/HSD_masked_selectedBy4Uniform'
+    args.pretrained = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/modelPath/20211224_05_37_46_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_/ckpt_epoch_152_Best.pth'
+    args.data = '/home/hsc/Research/TrafficSceneClassification/data/data_experiment/HSD_masked'
     start = time.time()
     process_feature(args)
     print('Processing using time: %.0fs'%(time.time()-start))

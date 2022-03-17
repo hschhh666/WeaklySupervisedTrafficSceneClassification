@@ -28,7 +28,7 @@ from sklearn.metrics import silhouette_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-res_path = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211130_04_34_20_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_'
+res_path = '/home/hsc/Research/TrafficSceneClassification/runningSavePath/resultPath/20211205_02_24_08_lossMethod_softmax_NegNum_128_lr_0.03_decay_0.0001_bsz_128_featDim_64_'
 
 log_file_name = os.path.join(res_path, 'clusterAndEvaluation.txt') 
 sys.stdout = Logger(log_file_name) # 把print的东西输出到txt文件中
@@ -63,6 +63,8 @@ for i in range(4):
     label_conventer[i] = int(map_table[i,:].argmax())
     print(map_table[i,int(map_table[i,:].argmax())])
 
+# label_conventer = [0,1,2,3]
+
 converted_label = np.zeros_like(cluster_label)
 for i in range(len(cluster_label)):
     converted_label[i] = label_conventer[cluster_label[i]]
@@ -94,6 +96,7 @@ for i in range(np.shape(val_feat)[0]):
             p = j
     pred_labels.append(p)
 
+np.save(os.path.join(res_path, 'pred.npy'), np.array(pred_labels, dtype=int))
 
 cm = confusion_matrix(val_targets, pred_labels)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Highway','Local','Ramp','Urban'])
