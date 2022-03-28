@@ -73,11 +73,11 @@ plt.scatter(reduced_center_feat[:,0], reduced_center_feat[:,1],c = 'black', s = 
 plt.xticks([])  #去掉横坐标值
 plt.yticks([])  #去掉纵坐标值
 plt.title('Training feat vis by PCA, eps %.2f, cluster num %d'%(eps, cluster_num))
-plt.savefig(os.path.join(feat_path, 'cluster.png'))
+plt.savefig(os.path.join(feat_path, 'train_cluster_pca.png'))
 print('cluster num: ',cluster_num)
 
 
-if not os.path.exists(os.path.join(feat_path, 'cluster_tsne.png')):
+if not os.path.exists(os.path.join(feat_path, 'train_cluster_tsne.png')):
     reduced_train_feat_tsne = TSNE(n_components=2).fit_transform(train_feat)
     fig = plt.figure()
     fig.add_subplot(111)
@@ -85,7 +85,7 @@ if not os.path.exists(os.path.join(feat_path, 'cluster_tsne.png')):
     plt.xticks([])  #去掉横坐标值
     plt.yticks([])  #去掉纵坐标值
     plt.title('Training feat vis by tsne, eps %.2f, cluster num %d'%(eps, cluster_num))
-    plt.savefig(os.path.join(feat_path, 'cluster_tsne.png'))
+    plt.savefig(os.path.join(feat_path, 'train_cluster_tsne.png'))
 
 
 max_acc = 0
@@ -180,4 +180,14 @@ plt.scatter(reduced_val_feat_pca[:,0], reduced_val_feat_pca[:,1],c = [colars[i] 
 plt.xticks([])  #去掉横坐标值
 plt.yticks([])  #去掉纵坐标值
 plt.axis('off')  # 去掉坐标轴
-plt.savefig(os.path.join(feat_path, 'test_feat_on_train.png'), bbox_inches='tight', pad_inches=0)
+plt.savefig(os.path.join(feat_path, 'test_feat_on_train_pca.png'), bbox_inches='tight', pad_inches=0)
+
+
+reduced_val_feat_tsne = TSNE(n_components=2).fit_transform(val_feat)
+fig = plt.figure(figsize=(6, 6), dpi=600)
+fig.add_subplot(111)
+plt.scatter(reduced_val_feat_tsne[:,0], reduced_val_feat_tsne[:,1],c = [colars[i] for i in val_targets],s = 5, alpha = 0.5, zorder=1)
+plt.xticks([])  #去掉横坐标值
+plt.yticks([])  #去掉纵坐标值
+plt.axis('off')  # 去掉坐标轴
+plt.savefig(os.path.join(feat_path, 'test_feat_on_train_tsne.png'), bbox_inches='tight', pad_inches=0)
